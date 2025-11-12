@@ -1,44 +1,30 @@
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { List, RadioButton, Switch, Text, useTheme } from 'react-native-paper';
 
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { ThemeMode } from '@/context/ThemeContext';
+
 export default function SettingsScreen() {
   const theme = useTheme();
-  const colorScheme = useColorScheme();
-  const [isDarkMode, setIsDarkMode] = React.useState(colorScheme === 'dark');
-  const [themeMode, setThemeMode] = React.useState<'light' | 'dark' | 'system'>('system');
+  const { themeMode, isDarkMode, setThemeMode } = useAppTheme();
 
-  /**
-   * Sincroniza isDarkMode com themeMode e colorScheme
-   */
-  useEffect(() => {
-    if (themeMode === 'system') {
-      setIsDarkMode(colorScheme === 'dark');
-    }
-  }, [themeMode, colorScheme]);
+  // Manipula a mudança de modo de tema via RadioButton
+  // O RadioButton.Group garante que o valor será um dos três modos válidos
+  const handleThemeModeChange = useCallback(
+    (value: string) => {
+      setThemeMode(value as ThemeMode);
+    },
+    [setThemeMode]
+  );
 
-  /**
-   * Manipula a mudança do modo de tema (light/dark/system)
-   * Aceita string para compatibilidade com RadioButton.Group e valida internamente
-   */
-  const handleThemeModeChange = useCallback((value: string) => {
-    const validValue = value as 'light' | 'dark' | 'system';
-    if (validValue === 'light' || validValue === 'dark' || validValue === 'system') {
-      setThemeMode(validValue);
-      if (validValue !== 'system') {
-        setIsDarkMode(validValue === 'dark');
-      }
-    }
-  }, []);
-
-  /**
-   * Manipula o toggle do modo escuro
-   */
-  const handleDarkModeToggle = useCallback((value: boolean) => {
-    setIsDarkMode(value);
-    setThemeMode(value ? 'dark' : 'light');
-  }, []);
+  // Manipula o toggle do modo escuro via Switch
+  const handleDarkModeToggle = useCallback(
+    (value: boolean) => {
+      setThemeMode(value ? 'dark' : 'light');
+    },
+    [setThemeMode]
+  );
 
   const containerStyle = useMemo(
     () => [styles.container, { backgroundColor: theme.colors.background }],

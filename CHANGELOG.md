@@ -135,6 +135,57 @@ e este projeto adere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html
     - Extração de `status` para evitar repetição de `error.response.status`
     - Fluxo mais linear e fácil de manter
 
+### [Epic: Funcionalidades (FEATURE)]
+
+#### Added
+
+- **Task: FEAT-01 - Implementar Modo Escuro Persistente (RF-03)**
+  - Criado arquivo `context/ThemeContext.tsx`:
+    - Contexto unificado que gerencia estado do tema e integra `PaperProvider` do React Native Paper
+    - Gerencia três modos de tema: `light`, `dark` e `system`
+    - Persistência da preferência no AsyncStorage com chave `@theme_preference_v1`
+    - Usa `useColorScheme` do hook customizado como fallback quando modo é `system`
+    - Integra temas do React Native Paper e React Navigation usando `adaptNavigationTheme`
+    - Interface `ThemeContextType` exportada para type safety
+    - Type `ThemeMode` exportado para uso em outros arquivos
+    - Otimizações de performance:
+      - `useMemo` para temas (Paper e Navigation) evitando recriações
+      - `useCallback` para handler `handleSetThemeMode`
+      - `useMemo` para `contextValue` e `activeTheme`
+    - Comentários em português explicando cada seção do código
+  - Criado arquivo `hooks/useAppTheme.ts`:
+    - Hook customizado para acessar o contexto de tema de forma tipada
+    - Validação de uso dentro do `AppThemeProvider` com mensagem de erro descritiva
+    - Documentação JSDoc completa com `@returns` e `@throws`
+    - Tipo de retorno explícito `ThemeContextType` para melhor type safety
+  - Atualizado arquivo `app/_layout.tsx`:
+    - Substituída lógica local de tema pelo `AppThemeProvider`
+    - `AppThemeProvider` adicionado como wrapper raiz da aplicação
+    - Componente `AppLayout` interno usa `useAppTheme` para acessar tema
+    - `StatusBar` ajusta estilo automaticamente conforme tema (`light` ou `dark`)
+    - Separação de responsabilidades: `RootLayout` para providers, `AppLayout` para navegação
+
+- **Task: FEAT-02 - Implementar Toggle de Tema**
+  - Atualizado arquivo `app/(tabs)/settings.tsx`:
+    - Refatorada para usar `useAppTheme` hook em vez de estado local
+    - Removido estado local redundante (`isDarkMode`, `themeMode`)
+    - Handlers simplificados chamando `setThemeMode` diretamente do contexto
+    - `handleThemeModeChange`: manipula mudança via RadioButton.Group
+    - `handleDarkModeToggle`: manipula toggle via Switch
+    - Validação redundante removida (RadioButton.Group já garante valores válidos)
+    - Import do tipo `ThemeMode` para type safety
+    - Persistência automática via contexto (sem necessidade de lógica adicional)
+    - Comentários em português explicando cada handler
+    - Otimizações mantidas: `useCallback` para handlers, `useMemo` para estilos
+
+#### Changed
+
+- **Refatoração da Tela de Configurações**
+  - Tela `app/(tabs)/settings.tsx` refatorada para usar contexto de tema:
+    - Removida lógica de estado local duplicada
+    - Integração completa com `useAppTheme` hook
+    - Código mais limpo e manutenível seguindo princípio DRY
+
 ---
 
 ### [Epic: UI e Conteúdo (UI)]
@@ -164,6 +215,7 @@ e este projeto adere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html
     - Handlers otimizados com `useCallback`
     - Estilos memoizados com `useMemo`
     - Validação de tipos para compatibilidade com RadioButton.Group
+  - Nota: Esta implementação inicial foi posteriormente refatorada no Épico 4 (FEAT-02) para usar o contexto de tema unificado
 
 ---
 
