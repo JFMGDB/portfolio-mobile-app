@@ -1,47 +1,29 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { FlatList, View, StyleSheet, RefreshControl } from 'react-native';
-import { ActivityIndicator, Text, useTheme, Button } from 'react-native-paper';
 import { RepoCard } from '@/components/RepoCard';
+import { useCachedGithubRepos } from '@/hooks/useCachedGithubRepos';
 import { GitHubRepo } from '@/types/GitHub';
+import React, { useCallback, useMemo, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Button, Text, useTheme } from 'react-native-paper';
 
 /**
  * Tela de Projetos - Exibe lista de repositórios do GitHub
+ * 
+ * O QUE: Tela que exibe repositórios do GitHub usando hook com cache
+ * POR QUÊ: Integra com API do GitHub e oferece experiência offline-first
+ * ONDE: app/(tabs)/projects.tsx - Tela principal de projetos
  * 
  * Critérios de aceitação UI-03:
  * - Deve ter estados visuais para loading, erro e lista vazia
  * - A lista de sucesso renderiza uma FlatList de RepoCard
  * - Implementa RefreshControl (Pull-to-refresh)
  * 
- * Nota: A integração com a API será implementada no ÉPICO 3
+ * Critérios de aceitação API-02:
+ * - Consome hook useCachedGithubRepos para buscar e cachear dados
  */
 export default function ProjectsScreen() {
   const theme = useTheme();
+  const { data, isLoading, error, refresh } = useCachedGithubRepos();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [data, setData] = useState<GitHubRepo[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  /**
-   * Carrega os dados dos repositórios do GitHub
-   * TODO: Substituir pela implementação do hook useCachedGithubRepos no ÉPICO 3
-   */
-  const loadRepositories = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    // Limpa timeout anterior se existir
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    
-    // Simulação temporária - será substituída pela integração real
-    timeoutRef.current = setTimeout(() => {
-      setIsLoading(false);
-      setData([]);
-      timeoutRef.current = null;
-    }, 1000);
-  }, []);
 
   /**
    * Manipula o refresh manual (pull-to-refresh)
@@ -49,22 +31,11 @@ export default function ProjectsScreen() {
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      await loadRepositories();
+      await refresh();
     } finally {
       setIsRefreshing(false);
     }
-  }, [loadRepositories]);
-
-  useEffect(() => {
-    loadRepositories();
-    
-    // Cleanup: limpa timeout ao desmontar o componente
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [loadRepositories]);
+  }, [refresh]);
 
   // Estilos dinâmicos baseados no tema
   const containerStyle = useMemo(
@@ -76,7 +47,7 @@ export default function ProjectsScreen() {
     [theme.colors.background]
   );
   const errorTextStyle = useMemo(
-    () => [styles.errorMessage, { color: theme.colors.error }],
+    () => ({ ...styles.errorMessage, color: theme.colors.error }),
     [theme.colors.error]
   );
 
@@ -131,7 +102,7 @@ export default function ProjectsScreen() {
             Nenhum Projeto Encontrado
           </Text>
           <Text variant="bodyMedium" style={styles.emptyMessage}>
-            Nenhum repositório público foi encontrado na conta JFMGDB.
+            Nenhum repositório público foi encontrado na conta {process.env.EXPO_PUBLIC_GITHUB_USERNAME || 'JFMGDB'}.
           </Text>
         </View>
       );

@@ -70,6 +70,75 @@ e este projeto adere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html
       - Cleanup de timeout no useEffect para evitar memory leaks
     - Estrutura preparada para integração com hook `useCachedGithubRepos` (ÉPICO 3)
 
+### [Epic: Integração GitHub (API)]
+
+#### Added
+
+- **Task: API-01 - Criar Serviço Axios para GitHub (RF-01)**
+  - Criado arquivo `services/apiClient.ts`:
+    - Instância centralizada do Axios configurada com baseURL `https://api.github.com`
+    - Timeout de 10 segundos configurado para evitar requisições infinitas
+    - Headers apropriados para API do GitHub (`Accept: application/vnd.github+json`, `X-GitHub-Api-Version: 2022-11-28`)
+    - Segue princípio DRY centralizando configuração HTTP
+  - Criado arquivo `services/githubService.ts`:
+    - Função `fetchGithubRepos()` implementada para buscar repositórios públicos do usuário
+    - Username configurável via `EXPO_PUBLIC_GITHUB_USERNAME` (padrão: 'JFMGDB')
+    - Parâmetros de busca configurados:
+      - `type: 'all'` (inclui forks e originais)
+      - `sort: 'updated'` (ordena por data de atualização)
+      - `direction: 'desc'` (mais recentes primeiro)
+      - `per_page: 20` (limita a 20 projetos)
+    - Tratamento robusto de erros:
+      - Erro 403 (Rate Limit): mensagem específica sobre limite de requisições
+      - Erro 404 (Usuário não encontrado): mensagem com nome do usuário
+      - Erros de rede/timeout: mensagem sobre verificação de conexão
+      - Erros inesperados: mensagem genérica apropriada
+    - Separação de responsabilidades seguindo princípio SOLID (Single Responsibility)
+    - Código otimizado com early returns para melhor legibilidade
+
+- **Task: API-02 - Implementar Cache Offline (RF-02)**
+  - Criado hook `hooks/useCachedGithubRepos.ts`:
+    - Implementa estratégia stale-while-revalidate para cache offline
+    - Exibe dados do cache imediatamente (se existirem) enquanto busca dados frescos em background
+    - Cache persistido no AsyncStorage com timestamp para controle de expiração
+    - Tempo de expiração configurado para 1 hora (`CACHE_EXPIRATION_MS`)
+    - Chave de cache versionada: `@github_repos_cache_v1`
+    - Interface `CacheData` para tipagem do cache (timestamp + repos)
+    - Interface `UseCachedReposState` para tipagem do retorno do hook
+    - Estados gerenciados:
+      - `data`: array de repositórios (GitHubRepo[])
+      - `isLoading`: estado de carregamento inicial
+      - `error`: mensagem de erro (string | null)
+      - `refresh`: função para forçar atualização dos dados
+    - Lógica de cache inteligente:
+      - Se cache válido e não for refresh: não busca na rede
+      - Se cache inválido ou for refresh: busca na rede e atualiza cache
+      - Se busca falhar mas houver cache: não exibe erro (graceful degradation)
+      - Se busca falhar e não houver cache: exibe erro apropriado
+    - Otimizações de performance:
+      - `useCallback` para `loadData` e `refresh` evitando recriações
+      - `useRef` para rastrear se há dados disponíveis sem causar re-renders
+      - `useEffect` com dependências corretas para carregamento inicial
+  - Atualizada tela `app/(tabs)/projects.tsx`:
+    - Integração completa com hook `useCachedGithubRepos`
+    - Substituída lógica mock temporária pela implementação real
+    - Pull-to-refresh integrado com função `refresh` do hook
+    - Estados de loading, erro e lista vazia funcionando com dados reais
+    - Otimização de estilos: `errorTextStyle` usando objeto em vez de array
+    - Mantidas todas as otimizações de performance existentes
+
+#### Changed
+
+- **Otimização do Tratamento de Erros**
+  - Refatorado tratamento de erros em `services/githubService.ts`:
+    - Simplificado com early returns para melhor legibilidade
+    - Extração de `status` para evitar repetição de `error.response.status`
+    - Fluxo mais linear e fácil de manter
+
+---
+
+### [Epic: UI e Conteúdo (UI)]
+
 #### Changed
 
 - **Configuração do PaperProvider**
